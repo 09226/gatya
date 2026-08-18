@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="tI7Fo9gy88MovRQZRfMW_inpF3XmZYSmZwS9hoNOOWc" />
-<title>ぷにぷに ガシャ確率計算機（特定キャラ選択＋点滅防止版）</title>
+<title>ぷにぷに ガシャ確率計算機（特定回数以内＋複数キャラ当選＋LC確定枠込み）</title>
 
 <style>
   body {
@@ -64,7 +64,7 @@
 <body>
 
 <div class="container">
-  <h1>ぷにぷに ガシャ確率計算機（特定キャラ選択＋点滅防止版）</h1>
+  <h1>ぷにぷに ガシャ確率計算機（特定回数以内＋複数キャラ当選＋LC確定枠込み）</h1>
 
   <label>ガシャの種類</label>
   <select id="gachaType" onchange="togglePickup()">
@@ -74,7 +74,7 @@
     <option value="last">ラストチャンスガシャ</option>
   </select>
 
-  <h3>ランク別排出率（%）を入力</h3>
+  <h3>ランク別排出率（%）</h3>
 
   <label>Uz++ の排出率（%）</label>
   <input id="rate_Uzpp" type="number" step="0.01" value="0.6">
@@ -96,7 +96,7 @@
   <label>zzz キャラ名（カンマ区切り）</label>
   <input id="names_zzz" type="text" value="覚醒シリカ(ASO),覚醒ユージオ(UW)">
 
-  <h3>複数キャラ同時当選の対象キャラを選択</h3>
+  <h3>複数キャラ同時当選の対象キャラ</h3>
   <label>対象キャラ名（カンマ区切り）</label>
   <input id="multiTargets" type="text" placeholder="例: キリト(SAO),アリス(UW)">
 
@@ -105,7 +105,7 @@
     <input id="pickupCount" type="number" min="1" value="5">
   </div>
 
-  <label>回す回数</label>
+  <label>回す回数（特定回数以内）</label>
   <input id="pulls" type="number" min="1" placeholder="例: 200">
 
   <button id="calcBtn">計算する</button>
@@ -207,7 +207,7 @@
         }
 
         html += `
-            <strong>総合当選確率： ${(totalProb * 100).toFixed(2)}%</strong>
+            <strong>総合当選確率（${pulls}回以内）： ${(totalProb * 100).toFixed(2)}%</strong>
           </div><br>
         `;
 
@@ -238,74 +238,6 @@
 
     results.innerHTML = html;
   });
-</script>
-
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>複数キャラ当選確率計算機</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    .char-block { margin-bottom: 10px; }
-  </style>
-</head>
-<body>
-
-<h1>複数キャラ当選確率計算機</h1>
-
-<p>選択した複数キャラが、指定した回数以内に全員当選する確率を計算します。</p>
-
-<div id="characters"></div>
-
-<button onclick="addCharacter()">キャラを追加</button>
-
-<hr>
-
-<label>試行回数（連）:
-  <input id="pulls" type="number" value="100">
-</label>
-
-<button onclick="calc()">計算する</button>
-
-<h2>結果</h2>
-<p id="result"></p>
-
-<script>
-  let charCount = 0;
-
-  function addCharacter() {
-    charCount++;
-    const div = document.createElement("div");
-    div.className = "char-block";
-    div.innerHTML = `
-      <strong>キャラ ${charCount}</strong><br>
-      排出率（%）: <input type="number" step="0.01" class="rate" value="0.5">
-    `;
-    document.getElementById("characters").appendChild(div);
-  }
-
-  function calc() {
-    const pulls = parseInt(document.getElementById("pulls").value, 10);
-    const rateInputs = document.querySelectorAll(".rate");
-
-    let totalProb = 1; // 全員当選する確率（独立試行の積）
-
-    rateInputs.forEach(input => {
-      const rate = parseFloat(input.value) / 100; // 小数化
-      const noHit = Math.pow(1 - rate, pulls);   // 1回も当たらない確率
-      const atLeastOne = 1 - noHit;              // 1回以上当たる確率
-      totalProb *= atLeastOne;                   // 全員当選のため掛け合わせる
-    });
-
-    document.getElementById("result").textContent =
-      `この回数以内に全員当選する確率: ${(totalProb * 100).toFixed(4)}%`;
-  }
-
-  // 初期状態で1キャラ追加
-  addCharacter();
 </script>
 
 </body>
