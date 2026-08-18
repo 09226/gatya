@@ -118,8 +118,7 @@
 
   <div class="note">
     ・1回ずつ：そのキャラだけが当たる確率／複数キャラでの当たる確率（同時当選は含めない）<br>
-    ・10回ずつ：そのキャラだけが当たる確率／複数キャラでの当たる確率（ある10回で同時に出る確率を含む）<br>
-    ※10回ずつの総合当選確率は表示しません
+    ・10回ずつ：そのキャラだけが当たる確率（どこかの10回で出現）／複数キャラでの当たる確率（同じ10回で同時に出る＋別々の10回で出る）／総合確率<br>
   </div>
 
   <div id="results"></div>
@@ -164,6 +163,14 @@
     const gachaType = document.getElementById("gachaType").value;
     const drawMode = document.getElementById("drawMode").value;
 
+    const results = document.getElementById("results");
+    results.innerHTML = "";
+
+    if (isNaN(pulls) || pulls <= 0) {
+      results.innerHTML = "回す回数を正しく入力してください。";
+      return;
+    }
+
     const rateTable = {
       "Uz++": parseFloat(document.getElementById("rate_Uzpp").value),
       "Uz": parseFloat(document.getElementById("rate_Uz").value),
@@ -179,9 +186,6 @@
     const multiTargets = document.getElementById("multiTargets").value
       .split(",").map(s => s.trim()).filter(s => s);
 
-    const results = document.getElementById("results");
-    results.innerHTML = "";
-
     const totalPickup = namesTable["Uz++"].length + namesTable["Uz"].length + namesTable["zzz"].length;
 
     let guaranteedProb = 0;
@@ -194,7 +198,8 @@
 
     let singleNormalProbs = [];
     let singleTotalProbs = [];
-    let tenBlockNormalProbs = [];
+    let tenBlockHitProbs = [];   // 各キャラが1ブロック内で出る確率
+    let tenBlockAnyProbs = [];   // 各キャラが指定回数以内のどこかのブロックで出る確率
 
     const blocks = Math.floor(pulls / 10);
 
@@ -209,23 +214,23 @@
           totalProbSingle = 1 - (1 - baseProbSingle) * (1 - guaranteedProb);
         }
 
-        const baseProbTenOnly = baseProbSingle;
-        const baseProbTenBlock = blocks > 0 ? normalProb(rate, 10) : 0;
+        const perBlockProb = blocks > 0 ? normalProb(rate, 10) : 0;
+        const anyBlockProb = blocks > 0 ? (1 - Math.pow(1 - perBlockProb, blocks)) : 0;
 
         if (drawMode === "single") {
           html += `
             <div>
               <strong>${name}</strong>（${rank}）<br>
               ・そのキャラだけが当たる確率（${pulls}回以内）： ${(baseProbSingle * 100).toFixed(2)}%<br>
-              ・複数キャラでの当たる確率（総合当選）： ${(totalProbSingle * 100).toFixed(2)}%<br>
+              ・総合当選確率（確定枠込み／${pulls}回以内）： ${(totalProbSingle * 100).toFixed(2)}%<br>
             </div><br>
           `;
         } else {
           html += `
             <div>
               <strong>${name}</strong>（${rank}）<br>
-              ・そのキャラだけが当たる確率（${pulls}回以内）： ${(baseProbTenOnly * 100).toFixed(2)}%<br>
-              ・そのキャラがある10回内で出現する確率（1ブロック）： ${(baseProbTenBlock * 100).toFixed(2)}%<br>
+              ・そのキャラだけが当たる確率（${pulls}回以内にどこかの10回で出現）： ${(anyBlockProb * 100).toFixed(2)}%<br>
+              ・そのキャラがある10回内で出現する確率（1ブロック）： ${(perBlockProb * 100).toFixed(2)}%<br>
             </div><br>
           `;
         }
@@ -233,7 +238,10 @@
         if (multiTargets.includes(name)) {
           singleNormalProbs.push(baseProbSingle);
           singleTotalProbs.push(totalProbSingle);
-          if (blocks > 0) tenBlockNormalProbs.push(baseProbTenBlock);
+          if (blocks > 0) {
+            tenBlockHitProbs.push(perBlockProb);
+            tenBlockAnyProbs.push(anyBlockProb);
+          }
         }
       });
     });
@@ -249,14 +257,25 @@
           <strong>複数キャラでの当たる確率（総合当選）： ${(multiSingleTotal * 100).toFixed(4)}%</strong><br>
         `;
       } else {
-        if (blocks > 0 && tenBlockNormalProbs.length === multiTargets.length) {
-          const multiTenBlock = tenBlockNormalProbs.reduce((acc, p) => acc * p, 1);
-          const multiTenOverall = 1 - Math.pow(1 - multiTenBlock, blocks);
+        if (blocks > 0 && tenBlockHitProbs.length === multiTargets.length) {
+          // 同じ10回内で全ターゲットが同時に出る確率（1ブロック）
+          const sameBlockProbPerBlock = tenBlockHitProbs.reduce((acc, p) => acc * p, 1);
+          const sameBlockOverall = 1 - Math.pow(1 - sameBlockProbPerBlock, blocks);
+
+          // 指定回数以内のどこかの10回で、それぞれが少なくとも1回は出る確率
+          const allSomewhereProb = tenBlockAnyProbs.reduce((acc, p) => acc * p, 1);
+
+          // 別々の10回で出る確率（同じ10回で同時に出る確率を除いた部分）
+          let diffBlocksProb = allSomewhereProb - sameBlockOverall;
+          if (diffBlocksProb < 0) diffBlocksProb = 0;
+
+          const totalMultiProb = allSomewhereProb;
 
           html += `
             <hr>
-            <strong>複数キャラでの当たる確率（ある10回で同時に出る確率／1ブロック）： ${(multiTenBlock * 100).toFixed(4)}%</strong><br>
-            <strong>複数キャラでの当たる確率（指定回数以内にどこかの10回で同時に出る確率）： ${(multiTenOverall * 100).toFixed(4)}%</strong><br>
+            <strong>複数キャラでの当たる確率（どこかの10回で同時に出る確率）： ${(sameBlockOverall * 100).toFixed(4)}%</strong><br>
+            <strong>複数キャラでの当たる確率（別々の10回で出る確率）： ${(diffBlocksProb * 100).toFixed(4)}%</strong><br>
+            <strong>複数キャラでの総合確率（上記2つを加味）： ${(totalMultiProb * 100).toFixed(4)}%</strong><br>
           `;
         } else {
           html += `
@@ -273,3 +292,4 @@
 
 </body>
 </html>
+
