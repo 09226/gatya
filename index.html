@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="tI7Fo9gy88MovRQZRfMW_inpF3XmZYSmZwS9hoNOOWc" />
-<title>ぷにぷに ガシャ確率計算機（特定回数以内＋複数キャラ当選＋LC確定枠込み）</title>
+<title>ぷにぷに ガシャ確率計算機（複数キャラ同時当選反映版）</title>
 
 <style>
   body {
@@ -64,7 +64,7 @@
 <body>
 
 <div class="container">
-  <h1>ぷにぷに ガシャ確率計算機（特定回数以内＋複数キャラ当選＋LC確定枠込み）</h1>
+  <h1>ぷにぷに ガシャ確率計算機（複数キャラ同時当選反映版）</h1>
 
   <label>ガシャの種類</label>
   <select id="gachaType" onchange="togglePickup()">
@@ -111,7 +111,7 @@
   <button id="calcBtn">計算する</button>
 
   <div class="note">
-    ※複数キャラ同時当選確率は、10回単位で引いたとき、新キャラのうち2体以上が同時に当たる確率です。
+    ※複数キャラ同時当選確率は、総合当選確率にも反映されています。
   </div>
 
   <div id="results"></div>
@@ -222,18 +222,12 @@
       const multiNormal = normalProbs.reduce((acc, p) => acc * p, 1);
       const multiTotal = totalProbs.reduce((acc, p) => acc * p, 1);
 
-      if (gachaType === "last") {
-        html += `
-          <hr>
-          <strong>複数キャラ同時当選（通常排出）： ${(multiNormal * 100).toFixed(4)}%</strong><br>
-          <strong>複数キャラ同時当選（確定枠込み）： ${(multiTotal * 100).toFixed(4)}%</strong>
-        `;
-      } else {
-        html += `
-          <hr>
-          <strong>複数キャラ同時当選確率： ${(multiNormal * 100).toFixed(4)}%</strong>
-        `;
-      }
+      html += `
+        <hr>
+        <strong>複数キャラ同時当選（通常排出）： ${(multiNormal * 100).toFixed(4)}%</strong><br>
+        <strong>複数キャラ同時当選（確定枠込み）： ${(multiTotal * 100).toFixed(4)}%</strong><br>
+        <strong>複数キャラ総合当選確率（${pulls}回以内）： ${(multiTotal * 100).toFixed(4)}%</strong>
+      `;
     }
 
     results.innerHTML = html;
@@ -242,3 +236,4 @@
 
 </body>
 </html>
+
