@@ -242,3 +242,71 @@
 
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>複数キャラ当選確率計算機</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .char-block { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>複数キャラ当選確率計算機</h1>
+
+<p>選択した複数キャラが、指定した回数以内に全員当選する確率を計算します。</p>
+
+<div id="characters"></div>
+
+<button onclick="addCharacter()">キャラを追加</button>
+
+<hr>
+
+<label>試行回数（連）:
+  <input id="pulls" type="number" value="100">
+</label>
+
+<button onclick="calc()">計算する</button>
+
+<h2>結果</h2>
+<p id="result"></p>
+
+<script>
+  let charCount = 0;
+
+  function addCharacter() {
+    charCount++;
+    const div = document.createElement("div");
+    div.className = "char-block";
+    div.innerHTML = `
+      <strong>キャラ ${charCount}</strong><br>
+      排出率（%）: <input type="number" step="0.01" class="rate" value="0.5">
+    `;
+    document.getElementById("characters").appendChild(div);
+  }
+
+  function calc() {
+    const pulls = parseInt(document.getElementById("pulls").value, 10);
+    const rateInputs = document.querySelectorAll(".rate");
+
+    let totalProb = 1; // 全員当選する確率（独立試行の積）
+
+    rateInputs.forEach(input => {
+      const rate = parseFloat(input.value) / 100; // 小数化
+      const noHit = Math.pow(1 - rate, pulls);   // 1回も当たらない確率
+      const atLeastOne = 1 - noHit;              // 1回以上当たる確率
+      totalProb *= atLeastOne;                   // 全員当選のため掛け合わせる
+    });
+
+    document.getElementById("result").textContent =
+      `この回数以内に全員当選する確率: ${(totalProb * 100).toFixed(4)}%`;
+  }
+
+  // 初期状態で1キャラ追加
+  addCharacter();
+</script>
+
+</body>
+</html>
