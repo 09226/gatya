@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="tI7Fo9gy88MovRQZRfMW_inpF3XmZYSmZwS9hoNOOWc" />
-<title>ぷにぷに ガシャ確率計算機（複数キャラ同時当選反映版）</title>
+<title>ぷにぷに ガシャ確率計算機（通常排出＋複数当選確率版）</title>
 
 <style>
   body {
@@ -64,7 +64,7 @@
 <body>
 
 <div class="container">
-  <h1>ぷにぷに ガシャ確率計算機（複数キャラ同時当選反映版）</h1>
+  <h1>ぷにぷに ガシャ確率計算機（通常排出＋複数当選確率版）</h1>
 
   <label>ガシャの種類</label>
   <select id="gachaType" onchange="togglePickup()">
@@ -111,7 +111,7 @@
   <button id="calcBtn">計算する</button>
 
   <div class="note">
-    ※複数キャラ同時当選確率は、総合当選確率にも反映されています。
+    ※複数キャラ同時当選確率は、指定した回数以内に複数キャラが当選する確率です。
   </div>
 
   <div id="results"></div>
@@ -199,15 +199,8 @@
         html += `
           <div>
             <strong>${name}</strong>（${rank}）<br>
-            通常排出確率： ${(baseProb * 100).toFixed(2)}%<br>
-        `;
-
-        if (gachaType === "last") {
-          html += `確定枠累積確率： ${(guaranteedProb * 100).toFixed(2)}%<br>`;
-        }
-
-        html += `
-            <strong>総合当選確率（${pulls}回以内）： ${(totalProb * 100).toFixed(2)}%</strong>
+            通常排出確率（${pulls}回以内）： ${(baseProb * 100).toFixed(2)}%<br>
+            総合当選確率（${pulls}回以内）： ${(totalProb * 100).toFixed(2)}%<br>
           </div><br>
         `;
 
@@ -225,8 +218,7 @@
       html += `
         <hr>
         <strong>複数キャラ同時当選（通常排出）： ${(multiNormal * 100).toFixed(4)}%</strong><br>
-        <strong>複数キャラ同時当選（確定枠込み）： ${(multiTotal * 100).toFixed(4)}%</strong><br>
-        <strong>複数キャラ総合当選確率（${pulls}回以内）： ${(multiTotal * 100).toFixed(4)}%</strong>
+        <strong>複数キャラ同時当選（総合当選確率）： ${(multiTotal * 100).toFixed(4)}%</strong>
       `;
     }
 
@@ -236,4 +228,5 @@
 
 </body>
 </html>
+
 
