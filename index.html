@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="tI7Fo9gy88MovRQZRfMW_inpF3XmZYSmZwS9hoNOOWc" />
 <title>ぷにぷに ガシャ確率計算機（特定キャラ選択＋点滅防止版）</title>
+
 <style>
   body {
     font-family: "Segoe UI", system-ui, sans-serif;
@@ -56,16 +57,8 @@
     border: 1px solid #d6f5a3;
   }
 
-  /* ▼ 点滅防止のため display を使わず visibility で制御 */
-  .hidden {
-    visibility: hidden;
-    height: 0;
-    overflow: hidden;
-  }
-  .visible {
-    visibility: visible;
-    height: auto;
-  }
+  .hidden { visibility: hidden; height: 0; overflow: hidden; }
+  .visible { visibility: visible; height: auto; }
 </style>
 </head>
 <body>
@@ -128,7 +121,6 @@
   function togglePickup() {
     const gachaType = document.getElementById("gachaType").value;
     const area = document.getElementById("pickupArea");
-
     if (gachaType === "last") {
       area.classList.remove("hidden");
       area.classList.add("visible");
