@@ -4,7 +4,75 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ぷにぷに ガシャ確率計算機（ラストチャンス・n回当選対応版）</title>
-<link rel="stylesheet" href="style.css">
+
+<style>
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(180deg, #b6ff6c, #8be85a);
+    display: flex;
+    justify-content: center;
+    padding-top: 40px;
+  }
+  .container {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    width: 760px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  }
+  h1 { font-size: 22px; margin-bottom: 10px; }
+  h3 { margin-top: 18px; margin-bottom: 6px; }
+  label { display: block; margin-top: 10px; font-weight: 600; }
+  select, input[type="number"], input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #4b6cff;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:hover { background: #3b57d6; }
+  #results { margin-top: 20px; font-size: 15px; }
+  .note {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #444;
+    background: #f7ffe8;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #d6f5a3;
+  }
+  .hidden { display: none; }
+  hr { margin: 12px 0; }
+
+  .multi-banner {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 8px;
+    margin-top: 6px;
+    background: #f9f9ff;
+  }
+  .multi-banner-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .multi-banner input[type="number"] {
+    width: 120px;
+    display: inline-block;
+  }
+</style>
 </head>
 <body>
 
@@ -81,87 +149,7 @@
   <div id="results"></div>
 </div>
 
-<script src="script.js"></script>
-</body>
-</html>
-body {
-  font-family: "Segoe UI", system-ui, sans-serif;
-  background: linear-gradient(180deg, #b6ff6c, #8be85a);
-  display: flex;
-  justify-content: center;
-  padding-top: 40px;
-}
-
-.container {
-  background: #ffffff;
-  padding: 24px;
-  border-radius: 16px;
-  width: 760px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-}
-
-h1 { font-size: 22px; margin-bottom: 10px; }
-h3 { margin-top: 18px; margin-bottom: 6px; }
-
-label { display: block; margin-top: 10px; font-weight: 600; }
-
-select, input[type="number"], input[type="text"] {
-  width: 100%;
-  padding: 8px;
-  margin-top: 4px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 12px;
-  border: none;
-  border-radius: 10px;
-  background: #4b6cff;
-  color: #fff;
-  font-size: 15px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-button:hover { background: #3b57d6; }
-
-#results { margin-top: 20px; font-size: 15px; }
-
-.note {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #444;
-  background: #f7ffe8;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #d6f5a3;
-}
-
-.hidden { display: none; }
-
-hr { margin: 12px 0; }
-
-.multi-banner {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 8px;
-  margin-top: 6px;
-  background: #f9f9ff;
-}
-
-.multi-banner-title {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.multi-banner input[type="number"] {
-  width: 120px;
-  display: inline-block;
-}
+<script>
 function onGachaTypeChange() {
   const gachaType = document.getElementById("gachaType").value;
   const drawModeArea = document.getElementById("drawModeArea");
@@ -367,10 +355,10 @@ document.getElementById("calcBtn").addEventListener("click", () => {
 
   results.innerHTML = html;
 });
-
 </script>
 
 </body>
 </html>
+
 
 
