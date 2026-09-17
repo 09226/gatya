@@ -141,10 +141,22 @@
 
   <div id="results"></div>
 </div>
-
 <script>
-/* ここから JavaScript 完全統合版 */
+/* ============================
+   キャラ一覧の安全な split
+   ============================ */
+function safeSplit(str) {
+  return str
+    .replace(/[\n\r]/g, "")     // 改行除去
+    .replace(/、/g, ",")        // 全角カンマを半角に統一
+    .split(",")
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
 
+/* ============================
+   ラストチャンス：確定枠表示切替
+   ============================ */
 function togglePickup() {
   const gachaType = document.getElementById("gachaType").value;
   const area = document.getElementById("pickupArea");
@@ -157,11 +169,17 @@ function togglePickup() {
   }
 }
 
+/* ============================
+   通常排出：1回以上当たる確率
+   ============================ */
 function normalProb(ratePercent, pulls) {
   const p = ratePercent / 100;
   return 1 - Math.pow(1 - p, pulls);
 }
 
+/* ============================
+   ラストチャンス確定枠の回数
+   ============================ */
 function getGuaranteedCount(pulls) {
   const arr = [];
   if (pulls >= 40) arr.push(40);
@@ -173,11 +191,17 @@ function getGuaranteedCount(pulls) {
   return arr.length;
 }
 
+/* ============================
+   確定枠で1回以上当たる確率
+   ============================ */
 function calcGuaranteedProb(totalPickup, guaranteedCount) {
   const p = 1 / totalPickup;
   return 1 - Math.pow(1 - p, guaranteedCount);
 }
 
+/* ============================
+   二項係数 C(n,k)
+   ============================ */
 function binomial(n, k) {
   if (k < 0 || k > n) return 0;
   if (k === 0 || k === n) return 1;
@@ -188,6 +212,10 @@ function binomial(n, k) {
   return coeff;
 }
 
+/* ============================
+   通常排出＋確定枠込みで
+   「ちょうど n 回」当たる確率
+   ============================ */
 function probNtimesWithGuaranteed(ratePercent, pulls, n, guaranteedCount, totalPickup) {
   const p = ratePercent / 100;
   const pg = 1 / totalPickup;
@@ -204,11 +232,13 @@ function probNtimesWithGuaranteed(ratePercent, pulls, n, guaranteedCount, totalP
   return total;
 }
 
+/* ============================
+   複数キャラの当選回数入力欄生成
+   ============================ */
 function buildMultiCountInputs() {
   const area = document.getElementById("multiCountsArea");
   area.innerHTML = "";
-  const multiTargets = document.getElementById("multiTargets").value
-    .split(",").map(s => s.trim()).filter(s => s);
+  const multiTargets = safeSplit(document.getElementById("multiTargets").value);
 
   multiTargets.forEach((name, idx) => {
     const div = document.createElement("div");
@@ -222,8 +252,12 @@ function buildMultiCountInputs() {
   });
 }
 
+/* ============================
+   メイン計算処理
+   ============================ */
 document.getElementById("calcBtn").addEventListener("click", () => {
 
+  /* ▼ 入力取得 */
   const pulls = parseInt(document.getElementById("pulls").value);
   const gachaType = document.getElementById("gachaType").value;
   const drawMode = document.getElementById("drawMode").value;
@@ -236,23 +270,27 @@ document.getElementById("calcBtn").addEventListener("click", () => {
     return;
   }
 
+  /* ▼ 排出率 */
   const rateTable = {
     "Uz++": parseFloat(document.getElementById("rate_Uzpp").value),
     "Uz":   parseFloat(document.getElementById("rate_Uz").value),
     "zzz":  parseFloat(document.getElementById("rate_zzz").value)
   };
 
+  /* ▼ キャラ一覧（安全な split を使用） */
   const namesTable = {
-    "Uz++": document.getElementById("names_Uzpp").value.split(",").map(s => s.trim()).filter(s => s),
-    "Uz":   document.getElementById("names_Uz").value.split(",").map(s => s.trim()).filter(s => s),
-    "zzz":  document.getElementById("names_zzz").value.split(",").map(s => s.trim()).filter(s => s)
+    "Uz++": safeSplit(document.getElementById("names_Uzpp").value),
+    "Uz":   safeSplit(document.getElementById("names_Uz").value),
+    "zzz":  safeSplit(document.getElementById("names_zzz").value)
   };
 
+  /* ▼ ピックアップ総数（n） */
   const totalPickup =
     namesTable["Uz++"].length +
     namesTable["Uz"].length +
     namesTable["zzz"].length;
 
+  /* ▼ ラストチャンス確定枠 */
   let guaranteedProb = 0;
   let guaranteedCount = 0;
 
@@ -261,34 +299,44 @@ document.getElementById("calcBtn").addEventListener("click", () => {
     guaranteedProb = calcGuaranteedProb(totalPickup, guaranteedCount);
   }
 
-  let html = "<h3>結果一覧</h3>";
+  let html = `<h3>結果一覧</h3>
+              <div>ピックアップ総数（n）：${totalPickup}</div>
+              <div>確定枠の回数：${guaranteedCount}</div><br>`;
 
+  /* ▼ 10回ずつモード用 */
   const blocks = Math.floor(pulls / 10);
 
-  const multiTargets = document.getElementById("multiTargets").value
-    .split(",").map(s => s.trim()).filter(s => s);
+  /* ▼ 複数キャラ同時当選用 */
+  const multiTargets = safeSplit(document.getElementById("multiTargets").value);
 
   let singleNormalProbs = [];
   let singleTotalProbs = [];
   let tenBlockHitProbs = [];
   let tenBlockAnyProbs = [];
 
+  /* ============================
+     各キャラの計算
+     ============================ */
   ["Uz++", "Uz", "zzz"].forEach(rank => {
     const rate = rateTable[rank];
     const names = namesTable[rank];
 
     names.forEach(name => {
 
+      /* ▼ 通常排出（1回以上） */
       const baseProbSingle = normalProb(rate, pulls);
 
-      let totalProbSingle = baseProbSingle;
-      if (gachaType === "last" && totalPickup > 0) {
-        totalProbSingle = 1 - (1 - baseProbSingle) * (1 - guaranteedProb);
-      }
+      /* ▼ 確定枠込み（1回以上） */
+      const totalProbSingle =
+        gachaType === "last" && totalPickup > 0
+          ? 1 - (1 - baseProbSingle) * (1 - guaranteedProb)
+          : baseProbSingle;
 
+      /* ▼ 10回ずつモード */
       const perBlockProb = blocks > 0 ? normalProb(rate, 10) : 0;
       const anyBlockProb = blocks > 0 ? (1 - Math.pow(1 - perBlockProb, blocks)) : 0;
 
+      /* ▼ 出力 */
       if (drawMode === "single") {
         html += `
           <div>
@@ -307,6 +355,7 @@ document.getElementById("calcBtn").addEventListener("click", () => {
         `;
       }
 
+      /* ▼ 複数キャラ同時当選用 */
       if (multiTargets.includes(name)) {
         singleNormalProbs.push(baseProbSingle);
         singleTotalProbs.push(totalProbSingle);
@@ -318,6 +367,9 @@ document.getElementById("calcBtn").addEventListener("click", () => {
     });
   });
 
+  /* ============================
+     複数キャラ同時当選
+     ============================ */
   if (multiTargets.length >= 2) {
 
     if (drawMode === "single") {
@@ -352,12 +404,8 @@ document.getElementById("calcBtn").addEventListener("click", () => {
 
   results.innerHTML = html;
 });
-
-/* ここまで JavaScript 完全統合版 */
 </script>
-
 </body>
 </html>
-
 
 
