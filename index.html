@@ -4,59 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ぷにぷに ガシャ確率計算機（ラストチャンス・n回当選対応版）</title>
-
-<style>
-  body {
-    font-family: "Segoe UI", system-ui, sans-serif;
-    background: linear-gradient(180deg, #b6ff6c, #8be85a);
-    display: flex;
-    justify-content: center;
-    padding-top: 40px;
-  }
-  .container {
-    background: #ffffff;
-    padding: 24px;
-    border-radius: 16px;
-    width: 720px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  }
-  h1 { font-size: 22px; margin-bottom: 10px; }
-  h3 { margin-top: 18px; margin-bottom: 6px; }
-  label { display: block; margin-top: 10px; font-weight: 600; }
-  select, input[type="number"], input[type="text"] {
-    width: 100%;
-    padding: 8px;
-    margin-top: 4px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-  }
-  button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 12px;
-    border: none;
-    border-radius: 10px;
-    background: #4b6cff;
-    color: #fff;
-    font-size: 15px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  button:hover { background: #3b57d6; }
-  #results { margin-top: 20px; font-size: 15px; }
-  .note {
-    margin-top: 10px;
-    font-size: 12px;
-    color: #444;
-    background: #f7ffe8;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #d6f5a3;
-  }
-  .hidden { display: none; }
-  hr { margin: 12px 0; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -94,30 +42,32 @@
 
   <label>Uz++ キャラ名（カンマ区切り）</label>
   <input id="names_Uzpp" type="text" value="キリト(SAO)">
-  <label>Uz++ の n 回当選（カンマ区切りで n を指定／キャラ数と同じ数）</label>
+  <label>Uz++ の n 回当選（カンマ区切り）</label>
   <input id="n_Uzpp" type="text" value="1">
 
   <label>Uz キャラ名（カンマ区切り）</label>
   <input id="names_Uz" type="text" value="アリス(UW),リーファ(ALO)">
-  <label>Uz の n 回当選（カンマ区切りで n を指定／キャラ数と同じ数）</label>
+  <label>Uz の n 回当選（カンマ区切り）</label>
   <input id="n_Uz" type="text" value="1,1">
 
   <label>zzz キャラ名（カンマ区切り）</label>
   <input id="names_zzz" type="text" value="覚醒シリカ(ASO),覚醒ユージオ(UW)">
-  <label>zzz の n 回当選（カンマ区切りで n を指定／キャラ数と同じ数）</label>
+  <label>zzz の n 回当選（カンマ区切り）</label>
   <input id="n_zzz" type="text" value="1,1">
 
   <h3>複数キャラ同時当選の対象キャラ</h3>
   <label>対象キャラ名（カンマ区切り）</label>
-  <input id="multiTargets" type="text" placeholder="例: キリト(SAO),アリス(UW)">
+  <input id="multiTargets" type="text" placeholder="例: キリト(SAO),アリス(UW)" oninput="buildMultiCountInputs()">
+
+  <div id="multiCountsArea"></div>
 
   <div id="pickupArea" class="hidden">
     <h3>ピックアップ数（確定枠の確率 = 1 / ピックアップ数）</h3>
-    <input id="pickupCount" type="number" min="1" value="5">
+    <input id="pickupCount" type="number" min="1" value="6">
   </div>
 
   <label>回す回数（特定回数以内）</label>
-  <input id="pulls" type="number" min="1" placeholder="例: 200">
+  <input id="pulls" type="number" min="1" placeholder="例: 300">
 
   <button id="calcBtn">計算する</button>
 
@@ -125,206 +75,299 @@
     ・ラストチャンス選択時：1回ずつの表示はなくなり、「10回ずつ回す」前提で<br>
     　① 確定枠込みの当選確率（1回以上）<br>
     　② 確定枠込みの、指定キャラが n 回当たる確率<br>
-    　③ 確定枠込みの、複数キャラが合計 n 回当たる確率<br>
-    ・その他のガシャでは従来どおり 1回／10回モードで通常確率のみ表示
+    　③ 確定枠込みの、複数キャラがそれぞれ n,m 回当たる確率<br>
   </div>
 
   <div id="results"></div>
 </div>
 
-<script>
-  function onGachaTypeChange() {
-    const gachaType = document.getElementById("gachaType").value;
-    const drawModeArea = document.getElementById("drawModeArea");
-    const pickupArea = document.getElementById("pickupArea");
-    const drawMode = document.getElementById("drawMode");
+<script src="script.js"></script>
+</body>
+</html>
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(180deg, #b6ff6c, #8be85a);
+  display: flex;
+  justify-content: center;
+  padding-top: 40px;
+}
 
-    if (gachaType === "last") {
-      drawModeArea.classList.add("hidden");
-      pickupArea.classList.remove("hidden");
-      drawMode.value = "ten"; // ラストチャンスは10回ずつ前提
-    } else {
-      drawModeArea.classList.remove("hidden");
-      pickupArea.classList.add("hidden");
+.container {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 16px;
+  width: 760px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+h1 { font-size: 22px; margin-bottom: 10px; }
+h3 { margin-top: 18px; margin-bottom: 6px; }
+
+label { display: block; margin-top: 10px; font-weight: 600; }
+
+select, input[type="number"], input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #4b6cff;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover { background: #3b57d6; }
+
+#results { margin-top: 20px; font-size: 15px; }
+
+.note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #444;
+  background: #f7ffe8;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #d6f5a3;
+}
+
+.hidden { display: none; }
+
+hr { margin: 12px 0; }
+
+.multi-banner {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 6px;
+  background: #f9f9ff;
+}
+
+.multi-banner-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.multi-banner input[type="number"] {
+  width: 120px;
+  display: inline-block;
+}
+function onGachaTypeChange() {
+  const gachaType = document.getElementById("gachaType").value;
+  const drawModeArea = document.getElementById("drawModeArea");
+  const pickupArea = document.getElementById("pickupArea");
+  const drawMode = document.getElementById("drawMode");
+
+  if (gachaType === "last") {
+    drawModeArea.classList.add("hidden");
+    pickupArea.classList.remove("hidden");
+    drawMode.value = "ten";
+  } else {
+    drawModeArea.classList.remove("hidden");
+    pickupArea.classList.add("hidden");
+  }
+}
+
+function normalProb(ratePercent, pulls) {
+  const p = ratePercent / 100;
+  return 1 - Math.pow(1 - p, pulls);
+}
+
+function getGuaranteedCount(pulls) {
+  const arr = [];
+  if (pulls >= 40) arr.push(40);
+  if (pulls >= 50) arr.push(50);
+  for (let base = 90; base <= pulls; base += 50) {
+    arr.push(base);
+    if (base + 10 <= pulls) arr.push(base + 10);
+  }
+  return arr.length;
+}
+
+function calcGuaranteedProb(pickupCount, guaranteedCount) {
+  const p = 1 / pickupCount;
+  return 1 - Math.pow(1 - p, guaranteedCount);
+}
+
+function binomial(n, k) {
+  if (k < 0 || k > n) return 0;
+  if (k === 0 || k === n) return 1;
+  let coeff = 1;
+  for (let i = 1; i <= k; i++) {
+    coeff = coeff * (n - i + 1) / i;
+  }
+  return coeff;
+}
+
+function probNtimes(ratePercent, pulls, n) {
+  const p = ratePercent / 100;
+  return binomial(pulls, n) * Math.pow(p, n) * Math.pow(1 - p, pulls - n);
+}
+
+function probNtimesWithGuaranteed(ratePercent, pulls, n, guaranteedCount, pickupCount) {
+  const p = ratePercent / 100;
+  const pg = 1 / pickupCount;
+  let total = 0;
+  for (let x = 0; x <= n; x++) {
+    const y = n - x;
+    const px = binomial(pulls, x) * Math.pow(p, x) * Math.pow(1 - p, pulls - x);
+    const py = binomial(guaranteedCount, y) * Math.pow(pg, y) * Math.pow(1 - pg, guaranteedCount - y);
+    total += px * py;
+  }
+  return total;
+}
+
+function buildMultiCountInputs() {
+  const area = document.getElementById("multiCountsArea");
+  area.innerHTML = "";
+  const multiTargets = document.getElementById("multiTargets").value
+    .split(",").map(s => s.trim()).filter(s => s);
+  multiTargets.forEach((name, idx) => {
+    const div = document.createElement("div");
+    div.className = "multi-banner";
+    div.innerHTML = `
+      <div class="multi-banner-title">${name} の当選回数</div>
+      <label>このキャラが当たる回数 n${idx+1}</label>
+      <input type="number" id="multiCount_${idx}" min="0" value="1">
+    `;
+    area.appendChild(div);
+  });
+}
+
+function findRankAndRateForName(name, rateTable, namesTable) {
+  for (const rank of ["Uz++", "Uz", "zzz"]) {
+    const names = namesTable[rank];
+    if (names.includes(name)) {
+      return { rank, rate: rateTable[rank] };
     }
   }
+  return null;
+}
 
-  function normalProb(ratePercent, pulls) {
-    const p = ratePercent / 100;
-    return 1 - Math.pow(1 - p, pulls);
+document.getElementById("calcBtn").addEventListener("click", () => {
+  const pulls = parseInt(document.getElementById("pulls").value);
+  const gachaType = document.getElementById("gachaType").value;
+
+  const results = document.getElementById("results");
+  results.innerHTML = "";
+
+  if (isNaN(pulls) || pulls <= 0) {
+    results.innerHTML = "回す回数を正しく入力してください。";
+    return;
   }
 
-  function getGuaranteedCount(pulls) {
-    const arr = [];
-    if (pulls >= 40) arr.push(40);
-    if (pulls >= 50) arr.push(50);
-    for (let base = 90; base <= pulls; base += 50) {
-      arr.push(base);
-      if (base + 10 <= pulls) arr.push(base + 10);
-    }
-    return arr.length;
-  }
+  const rateTable = {
+    "Uz++": parseFloat(document.getElementById("rate_Uzpp").value),
+    "Uz": parseFloat(document.getElementById("rate_Uz").value),
+    "zzz": parseFloat(document.getElementById("rate_zzz").value)
+  };
 
-  function calcGuaranteedProb(pickupCount, guaranteedCount) {
-    const p = 1 / pickupCount;
-    return 1 - Math.pow(1 - p, guaranteedCount);
-  }
+  const namesTable = {
+    "Uz++": document.getElementById("names_Uzpp").value.split(",").map(s => s.trim()).filter(s => s),
+    "Uz": document.getElementById("names_Uz").value.split(",").map(s => s.trim()).filter(s => s),
+    "zzz": document.getElementById("names_zzz").value.split(",").map(s => s.trim()).filter(s => s)
+  };
 
-  function binomial(n, k) {
-    if (k < 0 || k > n) return 0;
-    if (k === 0 || k === n) return 1;
-    let coeff = 1;
-    for (let i = 1; i <= k; i++) {
-      coeff = coeff * (n - i + 1) / i;
-    }
-    return coeff;
-  }
+  const nTable = {
+    "Uz++": document.getElementById("n_Uzpp").value.split(",").map(s => parseInt(s.trim())),
+    "Uz": document.getElementById("n_Uz").value.split(",").map(s => parseInt(s.trim())),
+    "zzz": document.getElementById("n_zzz").value.split(",").map(s => parseInt(s.trim()))
+  };
 
-  function probNtimes(ratePercent, pulls, n) {
-    const p = ratePercent / 100;
-    return binomial(pulls, n) * Math.pow(p, n) * Math.pow(1 - p, pulls - n);
-  }
+  const multiTargets = document.getElementById("multiTargets").value
+    .split(",").map(s => s.trim()).filter(s => s);
 
-  function probNtimesWithGuaranteed(ratePercent, pulls, n, guaranteedCount, pickupCount) {
-    const p = ratePercent / 100;
-    const pg = 1 / pickupCount;
-    let total = 0;
-    for (let x = 0; x <= n; x++) {
-      const y = n - x;
-      const px = binomial(pulls, x) * Math.pow(p, x) * Math.pow(1 - p, pulls - x);
-      const py = binomial(guaranteedCount, y) * Math.pow(pg, y) * Math.pow(1 - pg, guaranteedCount - y);
-      total += px * py;
-    }
-    return total;
-  }
+  let html = "<h3>結果一覧</h3>";
 
-  // 複数キャラの「合計 n 回当たる確率」（通常排出のみ）
-  function multiProbNtimes(rateTable, namesTable, multiTargets, pulls, n) {
-    const targets = [];
+  if (gachaType !== "last") {
     ["Uz++", "Uz", "zzz"].forEach(rank => {
       const rate = rateTable[rank];
       const names = namesTable[rank];
-      names.forEach(name => {
-        if (multiTargets.includes(name)) {
-          targets.push({ name, rate });
-        }
-      });
-    });
-    if (targets.length === 0 || n < 0) return 0;
-
-    let dp = new Array(n + 1).fill(0);
-    dp[0] = 1;
-
-    targets.forEach(t => {
-      const p = t.rate / 100;
-      const newDp = new Array(n + 1).fill(0);
-      for (let k = 0; k <= n; k++) {
-        if (dp[k] === 0) continue;
-        for (let x = 0; x <= n - k; x++) {
-          const px = binomial(pulls, x) * Math.pow(p, x) * Math.pow(1 - p, pulls - x);
-          newDp[k + x] += dp[k] * px;
-        }
-      }
-      dp = newDp;
-    });
-
-    return dp[n];
-  }
-
-  document.getElementById("calcBtn").addEventListener("click", () => {
-    const pulls = parseInt(document.getElementById("pulls").value);
-    const gachaType = document.getElementById("gachaType").value;
-    const drawMode = document.getElementById("drawMode").value;
-
-    const results = document.getElementById("results");
-    results.innerHTML = "";
-
-    if (isNaN(pulls) || pulls <= 0) {
-      results.innerHTML = "回す回数を正しく入力してください。";
-      return;
-    }
-
-    const rateTable = {
-      "Uz++": parseFloat(document.getElementById("rate_Uzpp").value),
-      "Uz": parseFloat(document.getElementById("rate_Uz").value),
-      "zzz": parseFloat(document.getElementById("rate_zzz").value)
-    };
-
-    const namesTable = {
-      "Uz++": document.getElementById("names_Uzpp").value.split(",").map(s => s.trim()).filter(s => s),
-      "Uz": document.getElementById("names_Uz").value.split(",").map(s => s.trim()).filter(s => s),
-      "zzz": document.getElementById("names_zzz").value.split(",").map(s => s.trim()).filter(s => s)
-    };
-
-    const nTable = {
-      "Uz++": document.getElementById("n_Uzpp").value.split(",").map(s => parseInt(s.trim())),
-      "Uz": document.getElementById("n_Uz").value.split(",").map(s => parseInt(s.trim())),
-      "zzz": document.getElementById("n_zzz").value.split(",").map(s => parseInt(s.trim()))
-    };
-
-    const multiTargets = document.getElementById("multiTargets").value
-      .split(",").map(s => s.trim()).filter(s => s);
-
-    let html = "<h3>結果一覧</h3>";
-
-    if (gachaType !== "last") {
-      ["Uz++", "Uz", "zzz"].forEach(rank => {
-        const rate = rateTable[rank];
-        const names = namesTable[rank];
-        names.forEach(name => {
-          const baseProbSingle = normalProb(rate, pulls);
-          html += `
-            <div>
-              <strong>${name}</strong>（${rank}）<br>
-              ・通常排出確率（${pulls}回以内）： ${(baseProbSingle * 100).toFixed(4)}%<br>
-            </div><br>
-          `;
-        });
-      });
-      results.innerHTML = html;
-      return;
-    }
-
-    const guaranteedCount = getGuaranteedCount(pulls);
-    const pickupCount = parseInt(document.getElementById("pickupCount").value);
-
-    ["Uz++", "Uz", "zzz"].forEach(rank => {
-      const rate = rateTable[rank];
-      const names = namesTable[rank];
-      const nList = nTable[rank];
-
       names.forEach((name, idx) => {
         const baseProbSingle = normalProb(rate, pulls);
-        const guaranteedProb = calcGuaranteedProb(pickupCount, guaranteedCount);
-        const totalProbSingle = 1 - (1 - baseProbSingle) * (1 - guaranteedProb);
-
-        const n = nList && !isNaN(nList[idx]) ? nList[idx] : 0;
-        let totalProbN = 0;
-        if (n > 0) {
-          totalProbN = probNtimesWithGuaranteed(rate, pulls, n, guaranteedCount, pickupCount);
-        }
-
+        const n = nTable[rank] && !isNaN(nTable[rank][idx]) ? nTable[rank][idx] : 0;
+        const baseProbN = n > 0 ? probNtimes(rate, pulls, n) : 0;
         html += `
           <div>
             <strong>${name}</strong>（${rank}）<br>
-            ① 確定枠込みの当選確率（${pulls}回以内に1回以上）： ${(totalProbSingle * 100).toFixed(6)}%<br>
-            ${n > 0 ? `② 確定枠込みの ${n} 回当選確率： ${(totalProbN * 100).toFixed(6)}%<br>` : ""}
+            ・通常排出確率（${pulls}回以内に1回以上）： ${(baseProbSingle * 100).toFixed(6)}%<br>
+            ${n > 0 ? `・通常排出で ${n} 回当たる確率： ${(baseProbN * 100).toFixed(6)}%<br>` : ""}
           </div><br>
         `;
       });
     });
 
-    if (multiTargets.length > 0) {
-      const nMulti = 1; // 複数キャラ合計 n 回（ここでは例として 1 回）
-      const multiProb = multiProbNtimes(rateTable, namesTable, multiTargets, pulls, nMulti);
+    results.innerHTML = html;
+    return;
+  }
+
+  const guaranteedCount = getGuaranteedCount(pulls);
+  const pickupCount = parseInt(document.getElementById("pickupCount").value);
+  const guaranteedProb = calcGuaranteedProb(pickupCount, guaranteedCount);
+
+  ["Uz++", "Uz", "zzz"].forEach(rank => {
+    const rate = rateTable[rank];
+    const names = namesTable[rank];
+    const nList = nTable[rank];
+
+    names.forEach((name, idx) => {
+      const baseProbSingle = normalProb(rate, pulls);
+      const totalProbSingle = 1 - (1 - baseProbSingle) * (1 - guaranteedProb);
+
+      const n = nList && !isNaN(nList[idx]) ? nList[idx] : 0;
+      let totalProbN = 0;
+      if (n > 0) {
+        totalProbN = probNtimesWithGuaranteed(rate, pulls, n, guaranteedCount, pickupCount);
+      }
+
+      html += `
+        <div>
+          <strong>${name}</strong>（${rank}）<br>
+          ① 確定枠込みの当選確率（${pulls}回以内に1回以上）： ${(totalProbSingle * 100).toFixed(6)}%<br>
+          ${n > 0 ? `② 確定枠込みの ${n} 回当選確率： ${(totalProbN * 100).toFixed(6)}%<br>` : ""}
+        </div><br>
+      `;
+    });
+  });
+
+  if (multiTargets.length > 0) {
+    let jointProb = 1;
+    let anyValid = false;
+
+    multiTargets.forEach((name, idx) => {
+      const info = findRankAndRateForName(name, rateTable, namesTable);
+      if (!info) return;
+      const nInput = document.getElementById("multiCount_" + idx);
+      if (!nInput) return;
+      const n = parseInt(nInput.value);
+      if (isNaN(n) || n < 0) return;
+
+      const pChar = probNtimesWithGuaranteed(info.rate, pulls, n, guaranteedCount, pickupCount);
+      jointProb *= pChar;
+      anyValid = true;
+    });
+
+    if (anyValid) {
       html += `
         <hr>
-        ③ 複数キャラが合計 ${nMulti} 回当たる確率（通常排出のみ）： ${(multiProb * 100).toFixed(6)}%<br>
+        ③ 複数キャラが指定回数以内にそれぞれ指定回数当たる確率（確定枠込み）： ${(jointProb * 100).toFixed(6)}%<br>
       `;
     }
+  }
 
-    results.innerHTML = html;
-  });
+  results.innerHTML = html;
+});
+
 </script>
 
 </body>
