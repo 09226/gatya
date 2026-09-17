@@ -4,81 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ぷにぷに ガシャ確率計算機（ラストチャンス・n回当選対応版）</title>
-
-<style>
-  body {
-    font-family: "Segoe UI", system-ui, sans-serif;
-    background: linear-gradient(180deg, #b6ff6c, #8be85a);
-    display: flex;
-    justify-content: center;
-    padding-top: 40px;
-  }
-  .container {
-    background: #ffffff;
-    padding: 24px;
-    border-radius: 16px;
-    width: 760px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  }
-  h1 { font-size: 22px; margin-bottom: 10px; }
-  h3 { margin-top: 18px; margin-bottom: 6px; }
-  label { display: block; margin-top: 10px; font-weight: 600; }
-  select, input[type="number"], input[type="text"] {
-    width: 100%;
-    padding: 8px;
-    margin-top: 4px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-  }
-  button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 12px;
-    border: none;
-    border-radius: 10px;
-    background: #4b6cff;
-    color: #fff;
-    font-size: 15px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  button:hover { background: #3b57d6; }
-  #results { margin-top: 20px; font-size: 15px; }
-  .note {
-    margin-top: 10px;
-    font-size: 12px;
-    color: #444;
-    background: #f7ffe8;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #d6f5a3;
-  }
-  .hidden { display: none; }
-  hr { margin: 12px 0; }
-
-  .multi-banner {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 8px;
-    margin-top: 6px;
-    background: #f9f9ff;
-  }
-  .multi-banner-title {
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .multi-banner input[type="number"] {
-    width: 120px;
-    display: inline-block;
-  }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
   <h1>ぷにぷに ガシャ確率計算機（ラストチャンス・n回当選対応版）</h1>
 
+  <!-- ガシャ種類 -->
   <label>ガシャの種類</label>
   <select id="gachaType" onchange="onGachaTypeChange()">
     <option value="first">初日ガシャ</option>
@@ -87,6 +20,7 @@
     <option value="last">ラストチャンスガシャ</option>
   </select>
 
+  <!-- 回し方（ラストチャンスでは非表示） -->
   <div id="drawModeArea">
     <label>回し方</label>
     <select id="drawMode">
@@ -95,6 +29,7 @@
     </select>
   </div>
 
+  <!-- ランク別排出率 -->
   <h3>ランク別排出率（%）</h3>
 
   <label>Uz++ の排出率（%）</label>
@@ -106,6 +41,7 @@
   <label>zzz の排出率（%）</label>
   <input id="rate_zzz" type="number" step="0.01" value="1.3">
 
+  <!-- キャラ一覧 -->
   <h3>キャラ一覧（特定キャラを選択）＋ n回当選指定</h3>
 
   <label>Uz++ キャラ名（カンマ区切り）</label>
@@ -123,33 +59,201 @@
   <label>zzz の n 回当選（カンマ区切り）</label>
   <input id="n_zzz" type="text" value="1,1">
 
+  <!-- 複数キャラ同時当選 -->
   <h3>複数キャラ同時当選の対象キャラ</h3>
   <label>対象キャラ名（カンマ区切り）</label>
   <input id="multiTargets" type="text" placeholder="例: キリト(SAO),アリス(UW)" oninput="buildMultiCountInputs()">
 
+  <!-- キャラごとの n,m 入力バナー -->
   <div id="multiCountsArea"></div>
 
+  <!-- ラストチャンス専用：ピックアップ数 -->
   <div id="pickupArea" class="hidden">
     <h3>ピックアップ数（確定枠の確率 = 1 / ピックアップ数）</h3>
     <input id="pickupCount" type="number" min="1" value="6">
   </div>
 
+  <!-- 回す回数 -->
   <label>回す回数（特定回数以内）</label>
   <input id="pulls" type="number" min="1" placeholder="例: 300">
 
+  <!-- 計算ボタン -->
   <button id="calcBtn">計算する</button>
 
+  <!-- 注意書き -->
   <div class="note">
     ・ラストチャンス選択時：1回ずつの表示はなくなり、「10回ずつ回す」前提で<br>
     　① 確定枠込みの当選確率（1回以上）<br>
     　② 確定枠込みの、指定キャラが n 回当たる確率<br>
     　③ 確定枠込みの、複数キャラがそれぞれ n,m 回当たる確率<br>
+    ・確定枠はキャラ一覧で入力した全キャラが対象（完全修正版）
   </div>
 
+  <!-- 結果表示 -->
   <div id="results"></div>
 </div>
 
-<script>
+<script src="script.js"></script>
+</body>
+</html>
+/* ================================
+   全体レイアウト
+================================ */
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(180deg, #b6ff6c, #8be85a);
+  display: flex;
+  justify-content: center;
+  padding-top: 40px;
+  margin: 0;
+}
+
+.container {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 16px;
+  width: 760px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* ================================
+   見出し
+================================ */
+h1 {
+  font-size: 22px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+h3 {
+  margin-top: 18px;
+  margin-bottom: 6px;
+  font-size: 18px;
+}
+
+/* ================================
+   ラベル・入力欄
+================================ */
+label {
+  display: block;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+select,
+input[type="number"],
+input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* ================================
+   ボタン
+================================ */
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #4b6cff;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #3b57d6;
+}
+
+/* ================================
+   結果表示
+================================ */
+#results {
+  margin-top: 20px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ================================
+   注意書き
+================================ */
+.note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #444;
+  background: #f7ffe8;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #d6f5a3;
+}
+
+/* ================================
+   非表示
+================================ */
+.hidden {
+  display: none;
+}
+
+/* ================================
+   区切り線
+================================ */
+hr {
+  margin: 12px 0;
+  border: none;
+  border-top: 1px solid #ddd;
+}
+
+/* ================================
+   複数キャラ n,m 入力バナー
+================================ */
+.multi-banner {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  background: #f9f9ff;
+}
+
+.multi-banner-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.multi-banner input[type="number"] {
+  width: 120px;
+  display: inline-block;
+  margin-top: 6px;
+}
+
+/* ================================
+   スマホ対応
+================================ */
+@media (max-width: 820px) {
+  .container {
+    width: 92%;
+    padding: 18px;
+  }
+
+  button {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+}
+// ================================
+// ガシャ種類によるUI切り替え
+// ================================
 function onGachaTypeChange() {
   const gachaType = document.getElementById("gachaType").value;
   const drawModeArea = document.getElementById("drawModeArea");
@@ -166,11 +270,17 @@ function onGachaTypeChange() {
   }
 }
 
+// ================================
+// 通常排出：1回以上当たる確率
+// ================================
 function normalProb(ratePercent, pulls) {
   const p = ratePercent / 100;
   return 1 - Math.pow(1 - p, pulls);
 }
 
+// ================================
+// ラストチャンス確定枠の回数（40,50,90,100,140,150,...）
+// ================================
 function getGuaranteedCount(pulls) {
   const arr = [];
   if (pulls >= 40) arr.push(40);
@@ -182,11 +292,17 @@ function getGuaranteedCount(pulls) {
   return arr.length;
 }
 
+// ================================
+// 確定枠で1回以上当たる確率（対象キャラ全体）
+// ================================
 function calcGuaranteedProb(pickupCount, guaranteedCount) {
   const p = 1 / pickupCount;
   return 1 - Math.pow(1 - p, guaranteedCount);
 }
 
+// ================================
+// 二項係数 C(n,k)
+// ================================
 function binomial(n, k) {
   if (k < 0 || k > n) return 0;
   if (k === 0 || k === n) return 1;
@@ -197,15 +313,23 @@ function binomial(n, k) {
   return coeff;
 }
 
+// ================================
+// 通常排出のみで「ちょうど n 回」当たる確率
+// ================================
 function probNtimes(ratePercent, pulls, n) {
   const p = ratePercent / 100;
   return binomial(pulls, n) * Math.pow(p, n) * Math.pow(1 - p, pulls - n);
 }
 
+// ================================
+// 通常排出＋確定枠込みで「ちょうど n 回」当たる確率
+// （確定枠はキャラ一覧全体が対象）
+// ================================
 function probNtimesWithGuaranteed(ratePercent, pulls, n, guaranteedCount, pickupCount) {
   const p = ratePercent / 100;
   const pg = 1 / pickupCount;
   let total = 0;
+
   for (let x = 0; x <= n; x++) {
     const y = n - x;
     const px = binomial(pulls, x) * Math.pow(p, x) * Math.pow(1 - p, pulls - x);
@@ -215,11 +339,15 @@ function probNtimesWithGuaranteed(ratePercent, pulls, n, guaranteedCount, pickup
   return total;
 }
 
+// ================================
+// 複数キャラ同時当選用：入力バナー生成
+// ================================
 function buildMultiCountInputs() {
   const area = document.getElementById("multiCountsArea");
   area.innerHTML = "";
   const multiTargets = document.getElementById("multiTargets").value
     .split(",").map(s => s.trim()).filter(s => s);
+
   multiTargets.forEach((name, idx) => {
     const div = document.createElement("div");
     div.className = "multi-banner";
@@ -232,6 +360,9 @@ function buildMultiCountInputs() {
   });
 }
 
+// ================================
+// キャラ名からランクと排出率を特定
+// ================================
 function findRankAndRateForName(name, rateTable, namesTable) {
   for (const rank of ["Uz++", "Uz", "zzz"]) {
     const names = namesTable[rank];
@@ -242,6 +373,9 @@ function findRankAndRateForName(name, rateTable, namesTable) {
   return null;
 }
 
+// ================================
+// メイン計算処理
+// ================================
 document.getElementById("calcBtn").addEventListener("click", () => {
   const pulls = parseInt(document.getElementById("pulls").value);
   const gachaType = document.getElementById("gachaType").value;
@@ -256,20 +390,20 @@ document.getElementById("calcBtn").addEventListener("click", () => {
 
   const rateTable = {
     "Uz++": parseFloat(document.getElementById("rate_Uzpp").value),
-    "Uz": parseFloat(document.getElementById("rate_Uz").value),
-    "zzz": parseFloat(document.getElementById("rate_zzz").value)
+    "Uz":   parseFloat(document.getElementById("rate_Uz").value),
+    "zzz":  parseFloat(document.getElementById("rate_zzz").value)
   };
 
   const namesTable = {
     "Uz++": document.getElementById("names_Uzpp").value.split(",").map(s => s.trim()).filter(s => s),
-    "Uz": document.getElementById("names_Uz").value.split(",").map(s => s.trim()).filter(s => s),
-    "zzz": document.getElementById("names_zzz").value.split(",").map(s => s.trim()).filter(s => s)
+    "Uz":   document.getElementById("names_Uz").value.split(",").map(s => s.trim()).filter(s => s),
+    "zzz":  document.getElementById("names_zzz").value.split(",").map(s => s.trim()).filter(s => s)
   };
 
   const nTable = {
     "Uz++": document.getElementById("n_Uzpp").value.split(",").map(s => parseInt(s.trim())),
-    "Uz": document.getElementById("n_Uz").value.split(",").map(s => parseInt(s.trim())),
-    "zzz": document.getElementById("n_zzz").value.split(",").map(s => parseInt(s.trim()))
+    "Uz":   document.getElementById("n_Uz").value.split(",").map(s => parseInt(s.trim())),
+    "zzz":  document.getElementById("n_zzz").value.split(",").map(s => parseInt(s.trim()))
   };
 
   const multiTargets = document.getElementById("multiTargets").value
@@ -277,14 +411,17 @@ document.getElementById("calcBtn").addEventListener("click", () => {
 
   let html = "<h3>結果一覧</h3>";
 
+  // ラストチャンス以外：通常排出のみ
   if (gachaType !== "last") {
     ["Uz++", "Uz", "zzz"].forEach(rank => {
       const rate = rateTable[rank];
       const names = namesTable[rank];
+
       names.forEach((name, idx) => {
         const baseProbSingle = normalProb(rate, pulls);
         const n = nTable[rank] && !isNaN(nTable[rank][idx]) ? nTable[rank][idx] : 0;
         const baseProbN = n > 0 ? probNtimes(rate, pulls, n) : 0;
+
         html += `
           <div>
             <strong>${name}</strong>（${rank}）<br>
@@ -299,6 +436,7 @@ document.getElementById("calcBtn").addEventListener("click", () => {
     return;
   }
 
+  // ラストチャンス：確定枠込み
   const guaranteedCount = getGuaranteedCount(pulls);
   const pickupCount = parseInt(document.getElementById("pickupCount").value);
   const guaranteedProb = calcGuaranteedProb(pickupCount, guaranteedCount);
@@ -335,8 +473,10 @@ document.getElementById("calcBtn").addEventListener("click", () => {
     multiTargets.forEach((name, idx) => {
       const info = findRankAndRateForName(name, rateTable, namesTable);
       if (!info) return;
+
       const nInput = document.getElementById("multiCount_" + idx);
       if (!nInput) return;
+
       const n = parseInt(nInput.value);
       if (isNaN(n) || n < 0) return;
 
@@ -355,10 +495,6 @@ document.getElementById("calcBtn").addEventListener("click", () => {
 
   results.innerHTML = html;
 });
-</script>
-
-</body>
-</html>
 
 
 
