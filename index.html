@@ -192,10 +192,10 @@ function getGuaranteedCount(pulls) {
 }
 
 /* ============================
-   確定枠で1回以上当たる確率
+   確定枠で1回以上当たる確率（pickupCount を使用）
    ============================ */
-function calcGuaranteedProb(totalPickup, guaranteedCount) {
-  const p = 1 / totalPickup;
+function calcGuaranteedProb(pickupCount, guaranteedCount) {
+  const p = 1 / pickupCount;
   return 1 - Math.pow(1 - p, guaranteedCount);
 }
 
@@ -216,9 +216,9 @@ function binomial(n, k) {
    通常排出＋確定枠込みで
    「ちょうど n 回」当たる確率
    ============================ */
-function probNtimesWithGuaranteed(ratePercent, pulls, n, guaranteedCount, totalPickup) {
+function probNtimesWithGuaranteed(ratePercent, pulls, n, guaranteedCount, pickupCount) {
   const p = ratePercent / 100;
-  const pg = 1 / totalPickup;
+  const pg = 1 / pickupCount;
   let total = 0;
 
   for (let x = 0; x <= n; x++) {
@@ -284,23 +284,20 @@ document.getElementById("calcBtn").addEventListener("click", () => {
     "zzz":  safeSplit(document.getElementById("names_zzz").value)
   };
 
-  /* ▼ ピックアップ総数（n） */
-  const totalPickup =
-    namesTable["Uz++"].length +
-    namesTable["Uz"].length +
-    namesTable["zzz"].length;
+  /* ▼ ピックアップ数（ここが今回の修正点） */
+  const pickupCount = parseInt(document.getElementById("pickupCount").value);
 
   /* ▼ ラストチャンス確定枠 */
   let guaranteedProb = 0;
   let guaranteedCount = 0;
 
-  if (gachaType === "last" && totalPickup > 0) {
+  if (gachaType === "last" && pickupCount > 0) {
     guaranteedCount = getGuaranteedCount(pulls);
-    guaranteedProb = calcGuaranteedProb(totalPickup, guaranteedCount);
+    guaranteedProb = calcGuaranteedProb(pickupCount, guaranteedCount);
   }
 
   let html = `<h3>結果一覧</h3>
-              <div>ピックアップ総数（n）：${totalPickup}</div>
+              <div>ピックアップ数（n）：${pickupCount}</div>
               <div>確定枠の回数：${guaranteedCount}</div><br>`;
 
   /* ▼ 10回ずつモード用 */
@@ -328,7 +325,7 @@ document.getElementById("calcBtn").addEventListener("click", () => {
 
       /* ▼ 確定枠込み（1回以上） */
       const totalProbSingle =
-        gachaType === "last" && totalPickup > 0
+        gachaType === "last" && pickupCount > 0
           ? 1 - (1 - baseProbSingle) * (1 - guaranteedProb)
           : baseProbSingle;
 
@@ -407,5 +404,4 @@ document.getElementById("calcBtn").addEventListener("click", () => {
 </script>
 </body>
 </html>
-
 
