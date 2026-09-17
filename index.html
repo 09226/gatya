@@ -2,7 +2,10 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ぷにぷに ガシャ確率計算機（特定キャラ選択＋点滅防止版）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="tI7Fo9gy88MovRQZRfMW_inpF3XmZYSmZwS9hoNOOWc" />
+<title>ぷにぷに ガシャ確率計算機（1回ずつ／10回ずつ対応版）</title>
+
 <style>
   body {
     font-family: "Segoe UI", system-ui, sans-serif;
@@ -54,22 +57,14 @@
     border: 1px solid #d6f5a3;
   }
 
-  /* ▼ 点滅防止のため display を使わず visibility で制御 */
-  .hidden {
-    visibility: hidden;
-    height: 0;
-    overflow: hidden;
-  }
-  .visible {
-    visibility: visible;
-    height: auto;
-  }
+  .hidden { visibility: hidden; height: 0; overflow: hidden; }
+  .visible { visibility: visible; height: auto; }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>ぷにぷに ガシャ確率計算機（特定キャラ選択＋点滅防止版）</h1>
+  <h1>ぷにぷに ガシャ確率計算機（1回ずつ／10回ずつ対応版）</h1>
 
   <label>ガシャの種類</label>
   <select id="gachaType" onchange="togglePickup()">
@@ -79,7 +74,13 @@
     <option value="last">ラストチャンスガシャ</option>
   </select>
 
-  <h3>ランク別排出率（%）を入力</h3>
+  <label>回し方</label>
+  <select id="drawMode">
+    <option value="single">1回ずつ回す</option>
+    <option value="ten">10回ずつ回す</option>
+  </select>
+
+  <h3>ランク別排出率（%）</h3>
 
   <label>Uz++ の排出率（%）</label>
   <input id="rate_Uzpp" type="number" step="0.01" value="0.6">
@@ -101,7 +102,7 @@
   <label>zzz キャラ名（カンマ区切り）</label>
   <input id="names_zzz" type="text" value="覚醒シリカ(ASO),覚醒ユージオ(UW)">
 
-  <h3>複数キャラ同時当選の対象キャラを選択</h3>
+  <h3>複数キャラ同時当選の対象キャラ</h3>
   <label>対象キャラ名（カンマ区切り）</label>
   <input id="multiTargets" type="text" placeholder="例: キリト(SAO),アリス(UW)">
 
@@ -110,13 +111,14 @@
     <input id="pickupCount" type="number" min="1" value="5">
   </div>
 
-  <label>回す回数</label>
+  <label>回す回数（特定回数以内）</label>
   <input id="pulls" type="number" min="1" placeholder="例: 200">
 
   <button id="calcBtn">計算する</button>
 
   <div class="note">
-    ※複数キャラ同時当選確率は、10回単位で引いたとき、新キャラのうち2体以上が同時に当たる確率です。
+    ・1回ずつ：そのキャラだけが当たる確率／複数キャラでの当たる確率（同時当選は含めない）<br>
+    ・10回ずつ：そのキャラだけが当たる確率（どこかの10回で出現）／複数キャラでの当たる確率（同じ10回で同時に出る＋別々の10回で出る）／総合確率<br>
   </div>
 
   <div id="results"></div>
@@ -126,7 +128,6 @@
   function togglePickup() {
     const gachaType = document.getElementById("gachaType").value;
     const area = document.getElementById("pickupArea");
-
     if (gachaType === "last") {
       area.classList.remove("hidden");
       area.classList.add("visible");
@@ -160,6 +161,15 @@
   document.getElementById("calcBtn").addEventListener("click", () => {
     const pulls = parseInt(document.getElementById("pulls").value);
     const gachaType = document.getElementById("gachaType").value;
+    const drawMode = document.getElementById("drawMode").value;
+
+    const results = document.getElementById("results");
+    results.innerHTML = "";
+
+    if (isNaN(pulls) || pulls <= 0) {
+      results.innerHTML = "回す回数を正しく入力してください。";
+      return;
+    }
 
     const rateTable = {
       "Uz++": parseFloat(document.getElementById("rate_Uzpp").value),
@@ -168,77 +178,111 @@
     };
 
     const namesTable = {
-      "Uz++": document.getElementById("names_Uzpp").value.split(",").map(s => s.trim()),
-      "Uz": document.getElementById("names_Uz").value.split(",").map(s => s.trim()),
-      "zzz": document.getElementById("names_zzz").value.split(",").map(s => s.trim())
+      "Uz++": document.getElementById("names_Uzpp").value.split(",").map(s => s.trim()).filter(s => s),
+      "Uz": document.getElementById("names_Uz").value.split(",").map(s => s.trim()).filter(s => s),
+      "zzz": document.getElementById("names_zzz").value.split(",").map(s => s.trim()).filter(s => s)
     };
 
-    const multiTargets = document.getElementById("multiTargets").value.split(",").map(s => s.trim());
-
-    const results = document.getElementById("results");
-    results.innerHTML = "";
+    const multiTargets = document.getElementById("multiTargets").value
+      .split(",").map(s => s.trim()).filter(s => s);
 
     const totalPickup = namesTable["Uz++"].length + namesTable["Uz"].length + namesTable["zzz"].length;
 
     let guaranteedProb = 0;
-    if (gachaType === "last") {
+    if (gachaType === "last" && totalPickup > 0) {
       const guaranteedCount = getGuaranteedCount(pulls);
       guaranteedProb = calcGuaranteedProb(totalPickup, guaranteedCount);
     }
 
     let html = "<h3>結果一覧</h3>";
-    let normalProbs = [];
-    let totalProbs = [];
+
+    let singleNormalProbs = [];
+    let singleTotalProbs = [];
+    let tenBlockHitProbs = [];   // 各キャラが1ブロック内で出る確率
+    let tenBlockAnyProbs = [];   // 各キャラが指定回数以内のどこかのブロックで出る確率
+
+    const blocks = Math.floor(pulls / 10);
 
     ["Uz++", "Uz", "zzz"].forEach(rank => {
       const rate = rateTable[rank];
       const names = namesTable[rank];
 
       names.forEach(name => {
-        const baseProb = normalProb(rate, pulls);
-        let totalProb = baseProb;
-
-        if (gachaType === "last") {
-          totalProb = 1 - (1 - baseProb) * (1 - guaranteedProb);
+        const baseProbSingle = normalProb(rate, pulls);
+        let totalProbSingle = baseProbSingle;
+        if (gachaType === "last" && totalPickup > 0) {
+          totalProbSingle = 1 - (1 - baseProbSingle) * (1 - guaranteedProb);
         }
 
-        html += `
-          <div>
-            <strong>${name}</strong>（${rank}）<br>
-            通常排出確率： ${(baseProb * 100).toFixed(2)}%<br>
-        `;
+        const perBlockProb = blocks > 0 ? normalProb(rate, 10) : 0;
+        const anyBlockProb = blocks > 0 ? (1 - Math.pow(1 - perBlockProb, blocks)) : 0;
 
-        if (gachaType === "last") {
-          html += `確定枠累積確率： ${(guaranteedProb * 100).toFixed(2)}%<br>`;
+        if (drawMode === "single") {
+          html += `
+            <div>
+              <strong>${name}</strong>（${rank}）<br>
+              ・そのキャラだけが当たる確率（${pulls}回以内）： ${(baseProbSingle * 100).toFixed(2)}%<br>
+              ・総合当選確率（確定枠込み／${pulls}回以内）： ${(totalProbSingle * 100).toFixed(2)}%<br>
+            </div><br>
+          `;
+        } else {
+          html += `
+            <div>
+              <strong>${name}</strong>（${rank}）<br>
+              ・そのキャラだけが当たる確率（${pulls}回以内にどこかの10回で出現）： ${(anyBlockProb * 100).toFixed(2)}%<br>
+              ・そのキャラがある10回内で出現する確率（1ブロック）： ${(perBlockProb * 100).toFixed(2)}%<br>
+            </div><br>
+          `;
         }
-
-        html += `
-            <strong>総合当選確率： ${(totalProb * 100).toFixed(2)}%</strong>
-          </div><br>
-        `;
 
         if (multiTargets.includes(name)) {
-          normalProbs.push(baseProb);
-          totalProbs.push(totalProb);
+          singleNormalProbs.push(baseProbSingle);
+          singleTotalProbs.push(totalProbSingle);
+          if (blocks > 0) {
+            tenBlockHitProbs.push(perBlockProb);
+            tenBlockAnyProbs.push(anyBlockProb);
+          }
         }
       });
     });
 
     if (multiTargets.length >= 2) {
-      const multiNormal = normalProbs.reduce((acc, p) => acc * p, 1);
-      const multiTotal = totalProbs.reduce((acc, p) => acc * p, 1);
+      if (drawMode === "single") {
+        const multiSingleNormal = singleNormalProbs.reduce((acc, p) => acc * p, 1);
+        const multiSingleTotal = singleTotalProbs.reduce((acc, p) => acc * p, 1);
 
-      if (gachaType === "last") {
         html += `
           <hr>
-          <strong>複数キャラ同時当選（通常排出）： ${(multiNormal * 100).toFixed(4)}%</strong><br>
-          <strong>複数キャラ同時当選（確定枠込み）： ${(multiTotal * 100).toFixed(4)}%</strong>
+          <strong>複数キャラでの当たる確率（通常排出）： ${(multiSingleNormal * 100).toFixed(4)}%</strong><br>
+          <strong>複数キャラでの当たる確率（総合当選）： ${(multiSingleTotal * 100).toFixed(4)}%</strong><br>
         `;
       } else {
-        html += `
-          <hr>
-          <strong>複数キャラ同時当選確率： ${(multiNormal * 100).toFixed(4)}%</strong>
-        `;
+        if (blocks > 0 && tenBlockHitProbs.length === multiTargets.length) {
+          // 同じ10回内で全ターゲットが同時に出る確率（1ブロック）
+          const sameBlockProbPerBlock = tenBlockHitProbs.reduce((acc, p) => acc * p, 1);
+          const sameBlockOverall = 1 - Math.pow(1 - sameBlockProbPerBlock, blocks);
+
+          // 指定回数以内のどこかの10回で、それぞれが少なくとも1回は出る確率
+          const allSomewhereProb = tenBlockAnyProbs.reduce((acc, p) => acc * p, 1);
+
+          // 別々の10回で出る確率（同じ10回で同時に出る確率を除いた部分）
+          let diffBlocksProb = allSomewhereProb - sameBlockOverall;
+          if (diffBlocksProb < 0) diffBlocksProb = 0;
+
+          const totalMultiProb = allSomewhereProb;
+
+          html += `
+            <hr>
+            <strong>複数キャラでの当たる確率（どこかの10回で同時に出る確率）： ${(sameBlockOverall * 100).toFixed(4)}%</strong><br>
+            <strong>複数キャラでの当たる確率（別々の10回で出る確率）： ${(diffBlocksProb * 100).toFixed(4)}%</strong><br>
+            <strong>複数キャラでの総合確率（上記2つを加味）： ${(totalMultiProb * 100).toFixed(4)}%</strong><br>
+          `;
+        } else {
+          html += `
+            <hr>
+            <strong>複数キャラでの当たる確率：ブロック数が不足しているため計算不可</strong><br>
+          `;
+        }
       }
     }
 
@@ -248,3 +292,4 @@
 
 </body>
 </html>
+
