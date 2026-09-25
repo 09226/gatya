@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ぷにぷに ガシャ確率計算機（ラストチャンス対応・完全統合版）</title>
+<title>ぷにぷに ガシャ確率計算機（ラストチャンスには対応できておりません）</title>
 
 <style>
   body {
@@ -79,7 +79,7 @@
 <body>
 
 <div class="container">
-  <h1>ぷにぷに ガシャ確率計算機（ラストチャンス対応・完全統合版）</h1>
+  <h1>ぷにぷに ガシャ確率計算機(ラストチャンスには対応しておりません)</h1>
 
   <label>ガシャの種類</label>
   <select id="gachaType" onchange="togglePickup()">
@@ -180,15 +180,28 @@ function normalProb(ratePercent, pulls) {
 /* ============================
    ラストチャンス確定枠の回数
    ============================ */
-function getGuaranteedCount(pulls) {
-  const arr = [];
-  if (pulls >= 40) arr.push(40);
-  if (pulls >= 50) arr.push(50);
+function getGuaranteedPositions(pulls) {
+
+  const positions = [];
+
+  if (pulls >= 40) positions.push(40);
+  if (pulls >= 50) positions.push(50);
+
   for (let base = 90; base <= pulls; base += 50) {
-    arr.push(base);
-    if (base + 10 <= pulls) arr.push(base + 10);
+
+    positions.push(base);
+
+    if (base + 10 <= pulls) {
+      positions.push(base + 10);
+    }
+
   }
-  return arr.length;
+
+  return positions;
+}
+
+function getGuaranteedCount(pulls) {
+  return getGuaranteedPositions(pulls).length;
 }
 
 /* ============================
